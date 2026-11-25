@@ -1,2 +1,2 @@
-# Gestion-de-compte-
+# Gestion-de-compte
 Gérer ta boutique 
