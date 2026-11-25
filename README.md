@@ -1,2 +1,2306 @@
 # Gestion-de-compte
 Gérer ta boutique 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GestPro FCFA - Gestion Commerciale & Comptabilité</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+                        colors: {
+                            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' }
+                        }
+                    }
+                }
+            };
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; }
+        .hidden { display: none !important; }
+        @media print {
+            body * { visibility: hidden !important; }
+            #printable-receipt, #printable-receipt * { visibility: visible !important; }
+            #printable-receipt {
+                position: fixed !important; left: 0 !important; top: 0 !important;
+                width: 80mm !important; padding: 8px !important; margin: 0 !important;
+                background: #ffffff !important; color: #000000 !important;
+                border: none !important; box-shadow: none !important;
+            }
+            .no-print { display: none !important; }
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-600 selection:text-white">
+
+    <!-- Conteneur Notifications Toast -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+        
+        <!-- BARRE LATÉRALE DESKTOP -->
+        <aside class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-slate-900 text-white z-30 shadow-xl">
+            <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
+                <div class="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-lg shadow-lg shrink-0 overflow-hidden">
+                    <img id="sidebar-shop-logo" src="" alt="Logo" class="hidden w-full h-full object-contain bg-white p-0.5">
+                    <svg id="sidebar-shop-icon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="overflow-hidden">
+                    <h1 id="sidebar-shop-name" class="font-bold text-sm truncate">Ma Boutique Pro</h1>
+                    <div class="flex items-center gap-1.5 text-xs text-emerald-400 mt-0.5">
+                        <span id="status-dot-desktop" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span id="status-text-desktop">Hors-ligne Prêt</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                <button type="button" onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-semibold rounded-xl bg-indigo-600 text-white shadow">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    <span>Tableau de bord</span>
+                </button>
+                <button type="button" onclick="switchTab('pos')" data-tab="pos" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                    <span>Caisse (Vente)</span>
+                </button>
+                <button type="button" onclick="switchTab('inventory')" data-tab="inventory" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span class="flex-1 text-left">Stocks & Produits</span>
+                    <span id="badge-low-stock" class="hidden px-2 py-0.5 text-xs font-bold bg-amber-500 text-slate-900 rounded-full">0</span>
+                </button>
+                <button type="button" onclick="switchTab('credits')" data-tab="credits" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span class="flex-1 text-left">Crédits & WhatsApp</span>
+                    <span id="badge-credits" class="hidden px-2 py-0.5 text-xs font-bold bg-rose-500 text-white rounded-full">0</span>
+                </button>
+                <button type="button" onclick="switchTab('accounting')" data-tab="accounting" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span>Dépenses & Compta</span>
+                </button>
+                <button type="button" onclick="switchTab('settings')" data-tab="settings" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Boutique & Licence</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800 text-xs text-slate-400">
+                <div class="flex items-center justify-between mb-1">
+                    <span>Statut :</span>
+                    <span id="sidebar-license-badge" class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">ESSAI (7J)</span>
+                </div>
+                <p id="sidebar-license-subtext" class="text-[11px] text-slate-500">Sauvegarde hors-ligne active</p>
+            </div>
+        </aside>
+
+        <!-- EN-TÊTE MOBILE -->
+        <header class="md:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-md">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center overflow-hidden shrink-0">
+                    <img id="mobile-shop-logo" src="" alt="Logo" class="hidden w-full h-full object-contain bg-white p-0.5">
+                    <svg id="mobile-shop-icon" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="truncate">
+                    <h1 id="mobile-shop-name" class="font-bold text-sm truncate">Ma Boutique Pro</h1>
+                    <div class="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                        <span id="status-dot-mobile" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span id="status-text-mobile">Hors-ligne Prêt</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="switchTab('pos')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shrink-0 shadow">
+                + Vente
+            </button>
+        </header>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="flex-1 md:pl-64 pb-24 md:pb-10">
+            <!-- Bandeau Abonnement -->
+            <div id="subscription-banner" class="bg-amber-950 text-amber-100 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-amber-900">
+                <div class="flex items-center gap-2">
+                    <span id="banner-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span id="banner-message" class="font-medium">Essai gratuit : 7 jours restants.</span>
+                </div>
+                <button type="button" onclick="switchTab('settings')" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-[11px]">
+                    Activer / Renouveler
+                </button>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+                <!-- ========================================== -->
+                <!-- ONGLET 1 : TABLEAU DE BORD                 -->
+                <!-- ========================================== -->
+                <section id="tab-dashboard" class="tab-content space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-slate-900">Tableau de Bord</h2>
+                            <p id="current-date-display" class="text-sm text-slate-500 capitalize">Bienvenue dans votre espace de gestion</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="switchTab('pos')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition">
+                                + Nouvelle Vente
+                            </button>
+                            <button type="button" onclick="openProductModal()" class="px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl shadow-sm transition">
+                                + Produit
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Indicateurs Clés (KPIs) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400 block">Chiffre d'affaires du jour</span>
+                            <p id="kpi-today-sales" class="text-2xl font-extrabold text-slate-900 mt-1">0 FCFA</p>
+                            <span id="kpi-today-count" class="text-xs text-emerald-600 font-medium mt-1 block">0 vente(s) aujourd'hui</span>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400 block">Chiffre d'affaires total</span>
+                            <p id="kpi-total-sales" class="text-2xl font-extrabold text-indigo-600 mt-1">0 FCFA</p>
+                            <span id="kpi-total-count" class="text-xs text-slate-500 font-medium mt-1 block">0 vente(s) cumulée(s)</span>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400 block">Bénéfice net estimé</span>
+                            <p id="kpi-net-profit" class="text-2xl font-extrabold text-emerald-600 mt-1">0 FCFA</p>
+                            <span class="text-xs text-slate-500 font-medium mt-1 block">Marge brute - Dépenses</span>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400 block">Créances clients en cours</span>
+                            <p id="kpi-total-credits" class="text-2xl font-extrabold text-rose-600 mt-1">0 FCFA</p>
+                            <span id="kpi-credits-clients" class="text-xs text-slate-500 font-medium mt-1 block">0 client(s) à relancer</span>
+                        </div>
+                    </div>
+
+                    <!-- Alertes Stock & Dernières Ventes -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h3 class="font-bold text-slate-900 text-base">Alertes Stock Faible</h3>
+                                <button type="button" onclick="switchTab('inventory')" class="text-xs font-bold text-indigo-600 hover:underline">Gérer stock</button>
+                            </div>
+                            <div id="dashboard-low-stock-list" class="space-y-2.5 max-h-72 overflow-y-auto"></div>
+                        </div>
+
+                        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h3 class="font-bold text-slate-900 text-base">Dernières Ventes Enregistrées</h3>
+                                <button type="button" onclick="switchTab('pos')" class="text-xs font-bold text-indigo-600 hover:underline">Ouvrir la caisse</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="text-xs uppercase text-slate-400 border-b border-slate-100">
+                                            <th class="py-2 px-2">Reçu</th>
+                                            <th class="py-2 px-2">Client</th>
+                                            <th class="py-2 px-2">Mode</th>
+                                            <th class="py-2 px-2 text-right">Total</th>
+                                            <th class="py-2 px-2 text-center">Ticket</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-recent-sales" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- ONGLET 2 : CAISSE (POINT DE VENTE)         -->
+                <!-- ========================================== -->
+                <section id="tab-pos" class="tab-content hidden space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-slate-900">Caisse & Encaissement</h2>
+                        <p class="text-sm text-slate-500">Sélectionnez les articles, choisissez le mode de paiement et éditez le ticket</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- Catalogue Produits (7 cols) -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="pos-search" oninput="renderPOSProducts()" placeholder="Rechercher un produit..." class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <select id="pos-category-filter" onchange="renderPOSProducts()" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">
+                                    <option value="ALL">Toutes catégories</option>
+                                </select>
+                            </div>
+
+                            <div id="pos-products-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <!-- Panier & Règlement (5 cols) -->
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 h-fit sticky top-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h3 class="font-bold text-slate-900 text-base">Panier (<span id="pos-cart-count">0</span>)</h3>
+                                <button type="button" onclick="clearCart()" class="text-xs font-bold text-rose-600 hover:underline">Vider</button>
+                            </div>
+
+                            <div id="pos-cart-items" class="space-y-2 max-h-64 overflow-y-auto"></div>
+
+                            <div class="p-3.5 bg-slate-900 text-white rounded-xl flex items-center justify-between">
+                                <span class="text-xs font-bold uppercase text-slate-300">Total à payer</span>
+                                <span id="pos-cart-total" class="text-xl font-extrabold text-amber-400">0 FCFA</span>
+                            </div>
+
+                            <!-- Mode de Paiement -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase text-slate-600">Mode de paiement :</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" onclick="selectPaymentMethod('Espèces')" data-pm="Espèces" class="pm-btn py-2.5 px-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold">Espèces</button>
+                                    <button type="button" onclick="selectPaymentMethod('Mixx by Yas')" data-pm="Mixx by Yas" class="pm-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold">Mixx by Yas</button>
+                                    <button type="button" onclick="selectPaymentMethod('Flooz')" data-pm="Flooz" class="pm-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold">Flooz</button>
+                                    <button type="button" onclick="selectPaymentMethod('Crédit')" data-pm="Crédit" class="pm-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold">À Crédit</button>
+                                </div>
+                            </div>
+
+                            <!-- Calculateur de Monnaie à rendre (Espèces) -->
+                            <div id="pos-cash-change-box" class="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <label for="pos-cash-received" class="text-xs font-bold text-emerald-900">Montant reçu (FCFA) :</label>
+                                    <input type="number" id="pos-cash-received" oninput="updateCashChange()" placeholder="Ex: 10000" class="w-32 px-2.5 py-1.5 bg-white border border-emerald-300 rounded-lg text-sm font-bold text-right">
+                                </div>
+                                <div class="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/70">
+                                    <span class="font-semibold text-emerald-800">Monnaie à rendre :</span>
+                                    <span id="pos-cash-change-amount" class="font-extrabold text-sm text-emerald-900">0 FCFA</span>
+                                </div>
+                            </div>
+
+                            <!-- Acompte si Crédit -->
+                            <div id="pos-credit-advance-box" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 space-y-1.5">
+                                <label class="block text-xs font-bold text-rose-800">Acompte versé aujourd'hui (FCFA) :</label>
+                                <input type="number" id="pos-credit-advance" value="0" min="0" class="w-full px-3 py-2 bg-white border border-rose-300 rounded-lg text-sm font-bold">
+                            </div>
+
+                            <!-- Infos Client -->
+                            <div class="space-y-2 pt-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase text-slate-600">Client</span>
+                                    <span id="client-req-badge" class="hidden text-[11px] font-bold text-rose-600">Obligatoire pour crédit</span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <input type="text" id="pos-client-name" placeholder="Nom du client" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                                    <input type="tel" id="pos-client-phone" placeholder="Tél WhatsApp (228...)" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="checkoutSale()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg transition">
+                                Valider la Vente & Générer Ticket
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- ONGLET 3 : STOCKS & PRODUITS               -->
+                <!-- ========================================== -->
+                <section id="tab-inventory" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-slate-900">Stocks & Catalogue Produits</h2>
+                            <p class="text-sm text-slate-500">Gérez vos articles, prix d'achat, prix de vente et alertes de rupture</p>
+                        </div>
+                        <button type="button" onclick="openProductModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm">
+                            + Ajouter un Produit
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Références en stock</span>
+                            <p id="inv-total-items" class="text-xl font-extrabold text-slate-900 mt-1">0 référence(s)</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Valeur d'achat du stock</span>
+                            <p id="inv-cost-value" class="text-xl font-extrabold text-slate-700 mt-1">0 FCFA</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Valeur de vente potentielle</span>
+                            <p id="inv-retail-value" class="text-xl font-extrabold text-emerald-600 mt-1">0 FCFA</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="inv-search" oninput="renderInventory()" placeholder="Rechercher un article..." class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <select id="inv-category-filter" onchange="renderInventory()" class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            <option value="ALL">Toutes catégories</option>
+                        </select>
+                        <select id="inv-stock-filter" onchange="renderInventory()" class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            <option value="ALL">Tous les niveaux</option>
+                            <option value="LOW">Stock faible / Rupture</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="py-3.5 px-4">Produit</th>
+                                    <th class="py-3.5 px-4">Catégorie</th>
+                                    <th class="py-3.5 px-4 text-right">Prix Achat</th>
+                                    <th class="py-3.5 px-4 text-right">Prix Vente</th>
+                                    <th class="py-3.5 px-4 text-right">Marge</th>
+                                    <th class="py-3.5 px-4 text-center">En Stock</th>
+                                    <th class="py-3.5 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- ONGLET 4 : CRÉDITS & RELANCES WHATSAPP     -->
+                <!-- ========================================== -->
+                <section id="tab-credits" class="tab-content hidden space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-slate-900">Crédits Clients & Relances WhatsApp</h2>
+                        <p class="text-sm text-slate-500">Suivez les ventes à crédit, encaissez les acomptes et relancez vos clients en 1 clic</p>
+                    </div>
+
+                    <div id="credits-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- ONGLET 5 : DÉPENSES & COMPTABILITÉ         -->
+                <!-- ========================================== -->
+                <section id="tab-accounting" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-slate-900">Dépenses & Comptabilité</h2>
+                            <p class="text-sm text-slate-500">Enregistrez vos charges et exportez votre comptabilité (Excel CSV / JSON)</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="exportAccountingCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm">
+                                Export Excel (CSV)
+                            </button>
+                            <button type="button" onclick="exportFullBackupJSON()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm">
+                                Sauvegarde JSON
+                            </button>
+                            <label for="import-json-input" class="cursor-pointer px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm">
+                                Restaurer JSON
+                            </label>
+                            <input type="file" id="import-json-input" accept=".json" onchange="importFullBackupJSON(event)" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Bilan Comptable -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Marge Brute sur Ventes</span>
+                            <p id="acc-gross-profit" class="text-2xl font-extrabold text-slate-900 mt-1">0 FCFA</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Total Dépenses & Charges</span>
+                            <p id="acc-total-expenses" class="text-2xl font-extrabold text-rose-600 mt-1">0 FCFA</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <span class="text-xs font-bold uppercase text-slate-400">Résultat Net Réel</span>
+                            <p id="acc-net-result" class="text-2xl font-extrabold text-emerald-600 mt-1">0 FCFA</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- Formulaire Ajout Dépense (5 cols) -->
+                        <form onsubmit="addExpense(event)" class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 h-fit">
+                            <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-2.5">Enregistrer une Dépense</h3>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Libellé de la dépense *</label>
+                                <input type="text" id="exp-title" required placeholder="Ex: Loyer boutique, Facture CEET..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Catégorie</label>
+                                    <select id="exp-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Loyer & Local">Loyer & Local</option>
+                                        <option value="Électricité / Eau / Wifi">Électricité / Eau / Wifi</option>
+                                        <option value="Transport & Livraison">Transport & Livraison</option>
+                                        <option value="Achat Stock / Marchandise">Achat Stock</option>
+                                        <option value="Salaires & Main d'œuvre">Salaires</option>
+                                        <option value="Autre Charge">Autre Charge</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Montant (FCFA) *</label>
+                                    <input type="number" id="exp-amount" required min="1" placeholder="5000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow">
+                                Ajouter la Dépense
+                            </button>
+                        </form>
+
+                        <!-- Liste Dépenses (7 cols) -->
+                        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                            <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-2.5">Journal des Dépenses</h3>
+                            <div id="expenses-list-container" class="space-y-2.5 max-h-96 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- ONGLET 6 : BOUTIQUE, LOGO & ABONNEMENT     -->
+                <!-- ========================================== -->
+                <section id="tab-settings" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-slate-900">Abonnement, Licence & Boutique</h2>
+                            <p class="text-sm text-slate-500">Payez via Mixx by Yas ou Flooz et recevez votre code unique sur WhatsApp</p>
+                        </div>
+                        <button type="button" onclick="openAdminModal()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl self-start sm:self-auto shadow">
+                            Espace Revendeur / Admin
+                        </button>
+                    </div>
+
+                    <!-- Carte Statut & Device ID -->
+                    <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2.5">
+                                <span id="license-status-pill" class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/30">ESSAI GRATUIT</span>
+                                <span id="license-days-left" class="text-xs font-semibold text-slate-300">7 jours restants</span>
+                            </div>
+                            <h3 class="text-xl font-bold">Licence Hors-Ligne liée à cet appareil</h3>
+                            <p class="text-xs text-slate-300 max-w-xl">Votre code d'activation est généré à partir de cet identifiant unique et débloque l'application hors-ligne.</p>
+                        </div>
+
+                        <div class="bg-white/10 border border-white/15 rounded-xl p-4 min-w-[250px] space-y-2">
+                            <span class="text-[11px] uppercase tracking-wider text-slate-300 font-semibold block">Identifiant Appareil (Device ID)</span>
+                            <div class="flex items-center justify-between gap-3 bg-slate-950/70 px-3.5 py-2.5 rounded-lg">
+                                <code id="device-id-display" class="text-sm font-mono font-extrabold text-amber-400">GP-0000-00</code>
+                                <button type="button" onclick="copyTextValue(appState.settings.deviceId, 'Identifiant appareil copié !')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
+                                    Copier
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- Souscription Mobile Money & Demande WhatsApp (7 cols) -->
+                        <div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
+                            <div class="border-b border-slate-100 pb-3">
+                                <h3 class="font-bold text-slate-900 text-lg">1. Souscrire via Mixx by Yas ou Flooz</h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Sélectionnez une formule, effectuez le dépôt puis envoyez votre référence sur WhatsApp.</p>
+                            </div>
+
+                            <!-- Formules -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Formule d'abonnement :</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                    <button type="button" onclick="selectSubscriptionPlan('30D', 3000, 'Mensuel (30 jours)')" data-plan="30D" class="plan-card p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left">
+                                        <span class="text-[11px] font-bold text-indigo-600 uppercase block">Mensuel</span>
+                                        <span class="text-base font-extrabold text-slate-900 block">3 000 F</span>
+                                        <span class="text-[11px] text-slate-500">30 jours</span>
+                                    </button>
+                                    <button type="button" onclick="selectSubscriptionPlan('90D', 8000, 'Trimestriel (90 jours)')" data-plan="90D" class="plan-card p-3 rounded-xl border border-slate-200 bg-white text-left">
+                                        <span class="text-[11px] font-bold text-slate-500 uppercase block">Trimestriel</span>
+                                        <span class="text-base font-extrabold text-slate-900 block">8 000 F</span>
+                                        <span class="text-[11px] text-emerald-600 font-semibold">90 jours</span>
+                                    </button>
+                                    <button type="button" onclick="selectSubscriptionPlan('365D', 25000, 'Annuel (365 jours)')" data-plan="365D" class="plan-card p-3 rounded-xl border border-slate-200 bg-white text-left">
+                                        <span class="text-[11px] font-bold text-slate-500 uppercase block">Annuel</span>
+                                        <span class="text-base font-extrabold text-slate-900 block">25 000 F</span>
+                                        <span class="text-[11px] text-emerald-600 font-semibold">1 an</span>
+                                    </button>
+                                    <button type="button" onclick="selectSubscriptionPlan('LIFE', 60000, 'Licence À Vie')" data-plan="LIFE" class="plan-card p-3 rounded-xl border border-slate-200 bg-white text-left">
+                                        <span class="text-[11px] font-bold text-amber-600 uppercase block">À Vie</span>
+                                        <span class="text-base font-extrabold text-slate-900 block">60 000 F</span>
+                                        <span class="text-[11px] text-slate-500">Illimité</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Opérateur & Numéros officiels -->
+                            <div class="space-y-3">
+                                <label class="block text-xs font-bold uppercase text-slate-600">Compte Mobile Money de paiement :</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div onclick="selectMomoOperator('Mixx by Yas')" data-op="Mixx by Yas" class="op-btn cursor-pointer p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50/70 flex items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-xs font-extrabold text-amber-800 block">Mixx by Yas</span>
+                                            <span id="display-yas-num" class="text-sm font-mono font-extrabold text-slate-900">+228 90033627</span>
+                                        </div>
+                                        <button type="button" onclick="event.stopPropagation(); copyTextValue(appState.settings.vendorYasNumber, 'Numéro Mixx by Yas copié !')" class="px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-900 hover:bg-amber-100">
+                                            Copier
+                                        </button>
+                                    </div>
+                                    <div onclick="selectMomoOperator('Flooz')" data-op="Flooz" class="op-btn cursor-pointer p-3.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-xs font-extrabold text-sky-800 block">Flooz (Moov)</span>
+                                            <span id="display-flooz-num" class="text-sm font-mono font-extrabold text-slate-900">+228 99444563</span>
+                                        </div>
+                                        <button type="button" onclick="event.stopPropagation(); copyTextValue(appState.settings.vendorFloozNumber, 'Numéro Flooz copié !')" class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100">
+                                            Copier
+                                        </button>
+                                    </div>
+                                </div>
+                                <p id="momo-pay-instruction" class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                    Envoyez <strong class="text-slate-900">3 000 FCFA</strong> via <strong class="text-amber-700">Mixx by Yas</strong> au <strong class="font-mono">+228 90033627</strong> puis saisissez la référence SMS ci-dessous.
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Référence Transaction SMS *</label>
+                                    <input type="text" id="sub-tx-ref" placeholder="Ex: MP261125.1420.A91" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Votre N° WhatsApp (réception code)</label>
+                                    <input type="tel" id="sub-client-wa" placeholder="Ex: 22890123456" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="requestActivationViaWhatsApp()" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg transition">
+                                Envoyer preuve & demander code sur WhatsApp
+                            </button>
+                        </div>
+
+                        <!-- Activation Code + Logo & Infos Boutique (5 cols) -->
+                        <div class="lg:col-span-5 space-y-6">
+                            <div class="bg-white p-6 rounded-2xl border-2 border-indigo-500/30 shadow-sm space-y-4">
+                                <div class="border-b border-slate-100 pb-2.5">
+                                    <h3 class="font-bold text-slate-900 text-lg">2. Activer le code reçu</h3>
+                                    <p class="text-xs text-slate-500">Collez le code d'activation unique reçu sur WhatsApp.</p>
+                                </div>
+                                <input type="text" id="set-license-key" placeholder="ACT-30D-XXXXXX-XXXX" class="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold uppercase">
+                                <button type="button" onclick="activateLicense()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow">
+                                    Valider et Débloquer l'Application
+                                </button>
+                                <p id="license-expiry-detail" class="text-xs text-center text-slate-500"></p>
+                            </div>
+
+                            <!-- Personnalisation Boutique & Logo -->
+                            <form onsubmit="saveShopSettings(event)" class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
+                                <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-2.5">Personnalisation Boutique & Logo</h3>
+
+                                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3.5">
+                                    <div class="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                                        <img id="settings-logo-preview" src="" alt="Logo boutique" class="hidden w-full h-full object-contain p-1">
+                                        <span id="settings-logo-placeholder" class="text-[11px] font-bold text-slate-400 text-center px-1">Aucun logo</span>
+                                    </div>
+                                    <div class="flex-1 space-y-1.5">
+                                        <span class="block text-xs font-bold text-slate-800">Logo client (Tickets & En-tête)</span>
+                                        <p class="text-[11px] text-slate-500">PNG, JPG ou WEBP (compressé hors-ligne).</p>
+                                        <div class="flex flex-wrap gap-2 pt-0.5">
+                                            <label for="set-shop-logo-input" class="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg">
+                                                Choisir un logo
+                                            </label>
+                                            <input type="file" id="set-shop-logo-input" accept="image/png,image/jpeg,image/webp" onchange="handleLogoUpload(event)" class="hidden">
+                                            <button type="button" id="btn-remove-logo" onclick="removeShopLogo()" class="hidden px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg">
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nom de la boutique</label>
+                                    <input type="text" id="set-shop-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Téléphone boutique</label>
+                                    <input type="text" id="set-shop-phone" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Adresse / Quartier</label>
+                                    <input type="text" id="set-shop-address" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pied de ticket</label>
+                                    <input type="text" id="set-receipt-footer" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div class="flex gap-2 pt-1">
+                                    <button type="submit" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl">
+                                        Enregistrer Boutique
+                                    </button>
+                                    <button type="button" onclick="resetDemoData()" class="px-3 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl">
+                                        Réinit. Démo
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- NAVIGATION MOBILE (BAS D'ÉCRAN) -->
+        <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex justify-around py-1.5 px-1 shadow-lg overflow-x-auto">
+            <button type="button" onclick="switchTab('dashboard')" data-tab="dashboard" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-indigo-600 font-bold text-[11px] bg-indigo-50">
+                <span>Accueil</span>
+            </button>
+            <button type="button" onclick="switchTab('pos')" data-tab="pos" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]">
+                <span>Caisse</span>
+            </button>
+            <button type="button" onclick="switchTab('inventory')" data-tab="inventory" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]">
+                <span>Stocks</span>
+            </button>
+            <button type="button" onclick="switchTab('credits')" data-tab="credits" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]">
+                <span>Crédits</span>
+            </button>
+            <button type="button" onclick="switchTab('accounting')" data-tab="accounting" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]">
+                <span>Compta</span>
+            </button>
+            <button type="button" onclick="switchTab('settings')" data-tab="settings" class="mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]">
+                <span>Licence</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALE PRODUIT (AJOUT / MODIFICATION)      -->
+    <!-- ========================================== -->
+    <div id="product-modal" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="product-modal-title" class="font-bold text-base text-slate-900">Produit</h3>
+                <button type="button" onclick="closeModal('product-modal')" class="px-2 py-1 text-slate-400 hover:text-slate-700 font-bold">✕</button>
+            </div>
+            <form onsubmit="saveProduct(event)" class="space-y-3">
+                <input type="hidden" id="prod-id">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nom du produit *</label>
+                    <input type="text" id="prod-name" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Catégorie</label>
+                    <input type="text" id="prod-category" placeholder="Ex: Alimentation, Boissons..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Prix d'achat (FCFA) *</label>
+                        <input type="number" id="prod-buy-price" required min="0" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Prix de vente (FCFA) *</label>
+                        <input type="number" id="prod-sell-price" required min="0" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Quantité en stock *</label>
+                        <input type="number" id="prod-stock" required min="0" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Seuil d'alerte</label>
+                        <input type="number" id="prod-alert" value="5" min="0" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('product-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Annuler</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALE REMBOURSEMENT CRÉDIT                -->
+    <!-- ========================================== -->
+    <div id="credit-pay-modal" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-base text-slate-900">Encaisser un Remboursement</h3>
+                <button type="button" onclick="closeModal('credit-pay-modal')" class="px-2 py-1 text-slate-400 font-bold">✕</button>
+            </div>
+            <form onsubmit="submitCreditPayment(event)" class="space-y-3">
+                <input type="hidden" id="cp-credit-id">
+                <div class="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+                    <p>Client : <strong id="cp-client-name"></strong></p>
+                    <p>Reste à payer : <strong id="cp-remaining" class="text-rose-600"></strong></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Montant versé (FCFA) *</label>
+                    <input type="number" id="cp-amount" required min="1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Mode de règlement</label>
+                    <select id="cp-method" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <option value="Espèces">Espèces</option>
+                        <option value="Mixx by Yas">Mixx by Yas</option>
+                        <option value="Flooz">Flooz</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl">
+                    Enregistrer le Paiement
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALE TICKET DE CAISSE 80MM               -->
+    <!-- ========================================== -->
+    <div id="receipt-modal" class="fixed inset-0 bg-slate-900/75 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 my-8">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 no-print">
+                <h3 class="font-bold text-sm text-slate-900">Ticket de Caisse</h3>
+                <button type="button" onclick="closeModal('receipt-modal')" class="px-2 py-1 text-slate-400 font-bold">✕</button>
+            </div>
+
+            <div id="printable-receipt" class="bg-white p-4 border border-dashed border-slate-300 rounded-xl text-slate-900 text-xs font-mono space-y-2.5">
+                <div class="text-center space-y-1 border-b border-dashed border-slate-300 pb-2.5">
+                    <img id="rec-shop-logo" src="" alt="Logo boutique" class="hidden max-h-14 max-w-[140px] mx-auto mb-1.5 object-contain">
+                    <h4 id="rec-shop-name" class="font-extrabold text-sm uppercase">MA BOUTIQUE PRO</h4>
+                    <p id="rec-shop-address" class="text-[11px] text-slate-600"></p>
+                    <p id="rec-shop-phone" class="text-[11px] text-slate-600"></p>
+                </div>
+
+                <div class="text-[11px] space-y-0.5 border-b border-dashed border-slate-300 pb-2">
+                    <div class="flex justify-between">
+                        <span id="rec-id" class="font-bold">Reçu #REC-1001</span>
+                        <span id="rec-date"></span>
+                    </div>
+                    <p id="rec-client-info" class="text-slate-700"></p>
+                </div>
+
+                <div id="rec-items" class="space-y-1 border-b border-dashed border-slate-300 pb-2"></div>
+
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between font-extrabold text-sm">
+                        <span>TOTAL :</span>
+                        <span id="rec-total">0 FCFA</span>
+                    </div>
+                    <div class="flex justify-between text-[11px]">
+                        <span>Règlement :</span>
+                        <span id="rec-payment" class="font-bold">Espèces</span>
+                    </div>
+                    <div id="rec-credit-details" class="hidden pt-1 border-t border-dotted border-slate-300 space-y-0.5 text-[11px]">
+                        <div class="flex justify-between">
+                            <span>Acompte payé :</span>
+                            <span id="rec-paid" class="font-semibold">0 FCFA</span>
+                        </div>
+                        <div class="flex justify-between font-bold">
+                            <span>Reste à payer :</span>
+                            <span id="rec-balance">0 FCFA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="rec-footer" class="text-center text-[10px] text-slate-500 pt-2 border-t border-dashed border-slate-300"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 no-print">
+                <button type="button" onclick="window.print()" class="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl">
+                    Imprimer (80mm)
+                </button>
+                <button type="button" onclick="shareReceiptOnWhatsApp()" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl">
+                    Partager WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALE VERROUILLAGE (ABONNEMENT EXPIRÉ)    -->
+    <!-- ========================================== -->
+    <div id="lock-screen-modal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 my-8 border border-slate-200">
+            <div class="text-center space-y-1.5">
+                <h3 class="text-2xl font-extrabold text-slate-900">Abonnement Expiré</h3>
+                <p class="text-sm text-slate-500">Votre période d'essai ou abonnement est terminé. Vos données locales sont intactes.</p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold uppercase text-slate-400 block">Identifiant Appareil</span>
+                    <code id="lock-device-id" class="text-sm font-mono font-extrabold text-slate-900">GP-0000-00</code>
+                </div>
+                <button type="button" onclick="copyTextValue(appState.settings.deviceId, 'Identifiant copié !')" class="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl">Copier</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-amber-800 block">Mixx by Yas</span>
+                        <span id="lock-yas-num" class="font-mono font-bold text-slate-900">+228 90033627</span>
+                    </div>
+                    <button type="button" onclick="copyTextValue(appState.settings.vendorYasNumber, 'Numéro Mixx copié !')" class="px-2 py-1 bg-white border border-amber-200 rounded-lg text-[10px] font-bold">Copier</button>
+                </div>
+                <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-sky-800 block">Flooz</span>
+                        <span id="lock-flooz-num" class="font-mono font-bold text-slate-900">+228 99444563</span>
+                    </div>
+                    <button type="button" onclick="copyTextValue(appState.settings.vendorFloozNumber, 'Numéro Flooz copié !')" class="px-2 py-1 bg-white border border-sky-200 rounded-lg text-[10px] font-bold">Copier</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input type="text" id="lock-tx-ref" placeholder="Réf. Transaction SMS" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                <button type="button" onclick="requestActivationFromLockScreen()" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl">
+                    Demander Code WhatsApp
+                </button>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+                <label class="block text-xs font-bold uppercase text-slate-600">Entrez le code d'activation reçu sur WhatsApp :</label>
+                <div class="flex gap-2">
+                    <input type="text" id="lock-license-input" placeholder="ACT-30D-XXXXXX-XXXX" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold uppercase">
+                    <button type="button" onclick="activateFromLockScreen()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl">Débloquer</button>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="button" onclick="openAdminModal()" class="text-[11px] text-slate-400 hover:text-slate-600 underline">Espace Revendeur / Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALE ESPACE REVENDEUR / ADMINISTRATEUR   -->
+    <!-- ========================================== -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/75 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-base text-slate-900">Espace Revendeur & Générateur de Codes</h3>
+                    <p class="text-[11px] text-slate-500">Génération de licences uniques liées au Device ID et envoi WhatsApp</p>
+                </div>
+                <button type="button" onclick="closeModal('admin-modal')" class="px-2 py-1 text-slate-400 font-bold">✕</button>
+            </div>
+
+            <div id="admin-pin-gate" class="space-y-4 py-4">
+                <p class="text-sm text-slate-600 text-center">Saisissez le code PIN Administrateur (défaut : <strong>2026</strong>) :</p>
+                <div class="max-w-xs mx-auto space-y-3">
+                    <input type="password" id="admin-pin-input" placeholder="Code PIN" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-lg font-mono font-bold tracking-widest">
+                    <button type="button" onclick="unlockAdminPanel()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl">
+                        Déverrouiller
+                    </button>
+                </div>
+            </div>
+
+            <div id="admin-panel-content" class="hidden space-y-5">
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-sm text-slate-900">Générer un Code d'Activation Unique</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">ID Appareil du Client *</label>
+                            <input type="text" id="adm-client-device" placeholder="Ex: GP-4821-90" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Durée / Formule *</label>
+                            <select id="adm-plan-code" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                                <option value="30D">Mensuel - 30 Jours (3 000 F)</option>
+                                <option value="90D">Trimestriel - 90 Jours (8 000 F)</option>
+                                <option value="365D">Annuel - 365 Jours (25 000 F)</option>
+                                <option value="LIFE">Licence À Vie (60 000 F)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nom boutique client</label>
+                            <input type="text" id="adm-client-shop" placeholder="Ex: Boutique Agoè" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">N° WhatsApp Client *</label>
+                            <input type="tel" id="adm-client-phone" placeholder="Ex: 22890123456" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="generateAndPrepareClientCode()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl">
+                        Générer le Code Unique
+                    </button>
+
+                    <div id="adm-generated-box" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-800">Code Unique Généré :</span>
+                            <button type="button" onclick="copyTextValue(document.getElementById('adm-generated-code').textContent, 'Code copié !')" class="text-xs font-bold text-emerald-700 underline">Copier</button>
+                        </div>
+                        <div class="bg-white px-3 py-2 rounded-lg border border-emerald-200 text-center">
+                            <code id="adm-generated-code" class="text-sm font-mono font-extrabold text-slate-900"></code>
+                        </div>
+                        <button type="button" onclick="sendGeneratedCodeToClientWhatsApp()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
+                            Envoyer le code au client sur WhatsApp
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-sm text-slate-900">Comptes Mobile Money & Support Éditeur</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">WhatsApp Support</label>
+                            <input type="text" id="adm-vendor-wa" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">PIN Admin</label>
+                            <input type="text" id="adm-new-pin" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">Compte Mixx by Yas</label>
+                            <input type="text" id="adm-yas-num" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">Compte Flooz</label>
+                            <input type="text" id="adm-flooz-num" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                        </div>
+                    </div>
+                    <button type="button" onclick="saveAdminConfig()" class="w-full py-2 bg-slate-900 text-white font-bold text-xs rounded-xl">
+                        Enregistrer Configuration Éditeur
+                    </button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <h4 class="font-bold text-xs uppercase text-slate-500">Historique des codes émis</h4>
+                    <div id="adm-history-list" class="max-h-28 overflow-y-auto space-y-1 text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- LOGIQUE JAVASCRIPT COMPLETE & SECURISEE (100% AUTONOME)              -->
+    <!-- ===================================================================== -->
+    <script>
+        const STORAGE_KEY = 'gestpro_fcfa_togo_v3';
+        const LICENSE_SECRET = 'GESTPRO_TG_LOME_2026_SECURE';
+        let memoryFallbackStorage = null;
+
+        let appState = {
+            settings: {
+                shopName: 'Établissements Togo Commerce',
+                shopPhone: '+228 90 12 34 56',
+                shopAddress: 'Boulevard du 13 Janvier, Lomé',
+                shopLogo: '',
+                receiptFooter: 'Merci pour votre achat ! Marchandise vendue non reprise.',
+                deviceId: '',
+                licenseKey: '',
+                planType: 'TRIAL',
+                expiresAt: null,
+                usedCodes: [],
+                vendorWhatsApp: '22890033627',
+                vendorYasNumber: '+228 90033627',
+                vendorFloozNumber: '+228 99444563',
+                adminPin: '2026'
+            },
+            issuedLicenses: [],
+            products: [],
+            sales: [],
+            credits: [],
+            expenses: []
+        };
+
+        let selectedPlan = { code: '30D', price: 3000, label: 'Mensuel (30 jours)' };
+        let selectedOperator = 'Mixx by Yas';
+        let lastGeneratedAdminPayload = null;
+        let cart = [];
+        let selectedPaymentMethod = 'Espèces';
+        let currentReceiptSale = null;
+
+        // ==========================================
+        // STOCKAGE SECURISE (TRY/CATCH + FALLBACK)
+        // ==========================================
+        function readSafeStorage() {
+            try {
+                return window.localStorage.getItem(STORAGE_KEY) || memoryFallbackStorage;
+            } catch (e) {
+                return memoryFallbackStorage;
+            }
+        }
+
+        function writeSafeStorage(jsonStr) {
+            memoryFallbackStorage = jsonStr;
+            try {
+                window.localStorage.setItem(STORAGE_KEY, jsonStr);
+            } catch (e) {
+                console.warn('Stockage local restreint, bascule en mémoire active.');
+            }
+        }
+
+        function saveState() {
+            try {
+                writeSafeStorage(JSON.stringify(appState));
+            } catch (e) {
+                console.error('Erreur sauvegarde état:', e);
+            }
+        }
+
+        // ==========================================
+        // INITIALISATION
+        // ==========================================
+        function generateUniqueDeviceId() {
+            const p1 = Math.floor(1000 + Math.random() * 9000);
+            const p2 = Math.floor(10 + Math.random() * 90);
+            return `GP-${p1}-${p2}`;
+        }
+
+        function initApp() {
+            let needsSave = false;
+            const raw = readSafeStorage();
+
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    appState = {
+                        ...appState,
+                        ...parsed,
+                        settings: { ...appState.settings, ...(parsed.settings || {}) }
+                    };
+                } catch (e) {
+                    seedDemoData();
+                }
+            } else {
+                seedDemoData();
+            }
+
+            if (!appState.settings.deviceId) {
+                appState.settings.deviceId = generateUniqueDeviceId();
+                needsSave = true;
+            }
+            if (!appState.settings.expiresAt && appState.settings.planType !== 'LIFE') {
+                appState.settings.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                appState.settings.planType = 'TRIAL';
+                needsSave = true;
+            }
+            if (!Array.isArray(appState.settings.usedCodes)) {
+                appState.settings.usedCodes = [];
+                needsSave = true;
+            }
+            if (needsSave) saveState();
+
+            updateConnectionStatus();
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+
+            const dateEl = document.getElementById('current-date-display');
+            if (dateEl) {
+                dateEl.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+
+            refreshAllUI();
+            checkSubscriptionLock();
+        }
+
+        function seedDemoData() {
+            const now = new Date();
+            const todayISO = now.toISOString();
+            const yesterdayISO = new Date(now.getTime() - 86400000).toISOString();
+
+            appState.products = [
+                { id: 'P1', name: 'Sac de Riz Parfumé 25kg', category: 'Alimentation', buyPrice: 12500, sellPrice: 14500, stock: 18, alertThreshold: 5 },
+                { id: 'P2', name: 'Bidon Huile Végétale 5L', category: 'Alimentation', buyPrice: 5200, sellPrice: 6000, stock: 4, alertThreshold: 5 },
+                { id: 'P3', name: 'Pack Eau Minérale (6x1.5L)', category: 'Boissons', buyPrice: 1500, sellPrice: 2000, stock: 30, alertThreshold: 8 },
+                { id: 'P4', name: 'Carton Savon de Ménage', category: 'Hygiène', buyPrice: 8000, sellPrice: 9500, stock: 2, alertThreshold: 4 },
+                { id: 'P5', name: 'Lait Concentré Sucré', category: 'Alimentation', buyPrice: 650, sellPrice: 800, stock: 45, alertThreshold: 10 },
+                { id: 'P6', name: 'Chargeur Rapide USB-C', category: 'Accessoires', buyPrice: 2000, sellPrice: 3500, stock: 12, alertThreshold: 3 }
+            ];
+
+            appState.sales = [
+                {
+                    id: 'REC-1001',
+                    date: todayISO,
+                    clientName: 'Koffi Agbeko',
+                    clientPhone: '22890112233',
+                    paymentMethod: 'Mixx by Yas',
+                    items: [
+                        { productId: 'P1', name: 'Sac de Riz Parfumé 25kg', qty: 1, buyPrice: 12500, sellPrice: 14500 },
+                        { productId: 'P3', name: 'Pack Eau Minérale (6x1.5L)', qty: 2, buyPrice: 1500, sellPrice: 2000 }
+                    ],
+                    totalAmount: 18500,
+                    amountPaid: 18500,
+                    profit: 3000
+                },
+                {
+                    id: 'REC-1002',
+                    date: yesterdayISO,
+                    clientName: 'Afi Mensah',
+                    clientPhone: '22891445566',
+                    paymentMethod: 'Crédit',
+                    items: [
+                        { productId: 'P2', name: 'Bidon Huile Végétale 5L', qty: 2, buyPrice: 5200, sellPrice: 6000 },
+                        { productId: 'P4', name: 'Carton Savon de Ménage', qty: 1, buyPrice: 8000, sellPrice: 9500 }
+                    ],
+                    totalAmount: 21500,
+                    amountPaid: 10000,
+                    profit: 3100
+                }
+            ];
+
+            appState.credits = [
+                {
+                    id: 'CRD-1002',
+                    saleId: 'REC-1002',
+                    clientName: 'Afi Mensah',
+                    clientPhone: '22891445566',
+                    totalAmount: 21500,
+                    amountPaid: 10000,
+                    date: yesterdayISO,
+                    history: [{ date: yesterdayISO, amount: 10000, method: 'Acompte initial' }]
+                }
+            ];
+
+            appState.expenses = [
+                { id: 'EXP-1', date: todayISO, title: 'Transport livraison marchandises', category: 'Transport & Livraison', amount: 2500 },
+                { id: 'EXP-2', date: yesterdayISO, title: 'Sachets d\'emballage', category: 'Autre Charge', amount: 1500 }
+            ];
+
+            saveState();
+        }
+
+        function resetDemoData() {
+            const savedSettings = { ...appState.settings };
+            const savedIssued = [...(appState.issuedLicenses || [])];
+            seedDemoData();
+            appState.settings = savedSettings;
+            appState.issuedLicenses = savedIssued;
+            saveState();
+            refreshAllUI();
+            showToast('Données de démonstration réinitialisées.');
+        }
+
+        // ==========================================
+        // UTILITAIRES & NAVIGATION
+        // ==========================================
+        function formatFCFA(amount) {
+            return new Intl.NumberFormat('fr-FR').format(Math.round(amount || 0)) + ' FCFA';
+        }
+
+        function formatDateShort(isoString) {
+            const d = new Date(isoString);
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+                   d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const border = type === 'error' ? 'border-rose-500' : type === 'warning' ? 'border-amber-500' : 'border-emerald-500';
+            toast.className = `bg-slate-900 text-white border-l-4 ${border} px-4 py-3 rounded-xl shadow-xl text-xs font-semibold pointer-events-auto transition-opacity duration-300`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+
+        function updateConnectionStatus() {
+            const isOnline = navigator.onLine;
+            const dText = document.getElementById('status-text-desktop');
+            const mText = document.getElementById('status-text-mobile');
+            if (dText) dText.textContent = isOnline ? 'En ligne • Sauvegardé' : 'Mode Hors-Ligne Actif';
+            if (mText) mText.textContent = isOnline ? 'En ligne • Prêt' : 'Hors-Ligne Actif';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabName}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-semibold rounded-xl bg-indigo-600 text-white shadow';
+                } else {
+                    btn.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white';
+                }
+            });
+
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.className = 'mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-indigo-600 font-bold text-[11px] bg-indigo-50';
+                } else {
+                    btn.className = 'mobile-nav-btn flex flex-col items-center p-2 rounded-xl text-slate-500 font-medium text-[11px]';
+                }
+            });
+
+            refreshAllUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function refreshAllUI() {
+            updateShopHeaders();
+            updateSubscriptionUI();
+            populateCategoryFilters();
+            renderDashboard();
+            renderPOSProducts();
+            renderCart();
+            renderInventory();
+            renderCredits();
+            renderAccounting();
+            loadSettingsForm();
+        }
+
+        // ==========================================
+        // ABONNEMENT, SIGNATURE CRYPTO & WHATSAPP
+        // ==========================================
+        function computeDeterministicHash(inputStr) {
+            let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+            for (let i = 0; i < inputStr.length; i++) {
+                const ch = inputStr.charCodeAt(i);
+                h1 = Math.imul(h1 ^ ch, 2654435761);
+                h2 = Math.imul(h2 ^ ch, 1597334677);
+            }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36).toUpperCase().padStart(8, '0').slice(0, 8);
+        }
+
+        function createUniqueActivationCode(deviceId, planCode) {
+            const cleanDev = deviceId.trim().toUpperCase();
+            const nonce = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const sig = computeDeterministicHash(`${cleanDev}|${planCode}|${nonce}|${LICENSE_SECRET}`).slice(0, 6);
+            return `ACT-${planCode}-${nonce}-${sig}`;
+        }
+
+        function verifyActivationCode(deviceId, rawCode) {
+            const code = (rawCode || '').trim().toUpperCase();
+            const parts = code.split('-');
+            if (parts.length !== 4 || parts[0] !== 'ACT') return { valid: false };
+            const planCode = parts[1];
+            const nonce = parts[2];
+            const sig = parts[3];
+            if (!['30D', '90D', '365D', 'LIFE'].includes(planCode)) return { valid: false };
+
+            const expectedSig = computeDeterministicHash(`${deviceId.trim().toUpperCase()}|${planCode}|${nonce}|${LICENSE_SECRET}`).slice(0, 6);
+            if (sig !== expectedSig) return { valid: false };
+            return { valid: true, planCode, code };
+        }
+
+        function applyActivationCode(rawCode) {
+            const check = verifyActivationCode(appState.settings.deviceId, rawCode);
+            if (!check.valid) {
+                showToast('Code d\'activation invalide ou non compatible avec cet appareil.', 'error');
+                return false;
+            }
+            if (appState.settings.usedCodes.includes(check.code)) {
+                showToast('Ce code d\'activation a déjà été utilisé.', 'warning');
+                return false;
+            }
+
+            const daysMap = { '30D': 30, '90D': 90, '365D': 365 };
+            if (check.planCode === 'LIFE') {
+                appState.settings.planType = 'LIFE';
+                appState.settings.expiresAt = null;
+            } else {
+                const baseTime = Math.max(Date.now(), appState.settings.expiresAt ? new Date(appState.settings.expiresAt).getTime() : 0);
+                appState.settings.expiresAt = new Date(baseTime + daysMap[check.planCode] * 24 * 60 * 60 * 1000).toISOString();
+                appState.settings.planType = check.planCode;
+            }
+
+            appState.settings.licenseKey = check.code;
+            appState.settings.usedCodes.push(check.code);
+            saveState();
+            refreshAllUI();
+            checkSubscriptionLock();
+            showToast('Licence activée avec succès ! Merci pour votre confiance.');
+            return true;
+        }
+
+        function activateLicense() {
+            const key = document.getElementById('set-license-key').value;
+            if (applyActivationCode(key)) {
+                document.getElementById('set-license-key').value = '';
+            }
+        }
+
+        function activateFromLockScreen() {
+            const key = document.getElementById('lock-license-input').value;
+            if (applyActivationCode(key)) {
+                document.getElementById('lock-license-input').value = '';
+            }
+        }
+
+        function selectSubscriptionPlan(code, price, label) {
+            selectedPlan = { code, price, label };
+            document.querySelectorAll('.plan-card').forEach(btn => {
+                if (btn.dataset.plan === code) {
+                    btn.className = 'plan-card p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left';
+                } else {
+                    btn.className = 'plan-card p-3 rounded-xl border border-slate-200 bg-white text-left';
+                }
+            });
+            updateMomoPaymentDisplay();
+        }
+
+        function selectMomoOperator(op) {
+            selectedOperator = op;
+            document.querySelectorAll('.op-btn').forEach(btn => {
+                if (btn.dataset.op === op) {
+                    btn.className = op === 'Mixx by Yas'
+                        ? 'op-btn cursor-pointer p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50/70 flex items-center justify-between gap-2'
+                        : 'op-btn cursor-pointer p-3.5 rounded-xl border-2 border-sky-500 bg-sky-50/70 flex items-center justify-between gap-2';
+                } else {
+                    btn.className = 'op-btn cursor-pointer p-3.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-2';
+                }
+            });
+            updateMomoPaymentDisplay();
+        }
+
+        function updateMomoPaymentDisplay() {
+            const yasEl = document.getElementById('display-yas-num');
+            const floozEl = document.getElementById('display-flooz-num');
+            const instrEl = document.getElementById('momo-pay-instruction');
+            if (yasEl) yasEl.textContent = appState.settings.vendorYasNumber;
+            if (floozEl) floozEl.textContent = appState.settings.vendorFloozNumber;
+            if (instrEl) {
+                const targetNum = selectedOperator === 'Mixx by Yas' ? appState.settings.vendorYasNumber : appState.settings.vendorFloozNumber;
+                const priceFmt = new Intl.NumberFormat('fr-FR').format(selectedPlan.price) + ' FCFA';
+                instrEl.innerHTML = `Envoyez <strong class="text-slate-900">${priceFmt}</strong> via <strong>${selectedOperator}</strong> au <strong class="font-mono">${targetNum}</strong> puis saisissez la référence SMS ci-dessous.`;
+            }
+        }
+
+        function requestActivationViaWhatsApp() {
+            const txRef = document.getElementById('sub-tx-ref').value.trim();
+            const clientWa = document.getElementById('sub-client-wa').value.trim();
+            if (!txRef) {
+                showToast('Veuillez saisir l\'ID / Référence de transaction SMS.', 'error');
+                return;
+            }
+            const vendorWa = (appState.settings.vendorWhatsApp || '22890033627').replace(/[^0-9]/g, '');
+            const msg = `Bonjour, je viens d'effectuer un paiement pour activer *GestPro FCFA* :\n\n🏪 Boutique : *${appState.settings.shopName}*\n📱 Device ID : *${appState.settings.deviceId}*\n📦 Formule : *${selectedPlan.label}* (${new Intl.NumberFormat('fr-FR').format(selectedPlan.price)} FCFA)\n💳 Opérateur : *${selectedOperator}*\n🧾 Réf. SMS : *${txRef}*${clientWa ? `\n📞 Mon WhatsApp : ${clientWa}` : ''}\n\nMerci de m'envoyer mon code d'activation unique.`;
+            window.open(`https://wa.me/${vendorWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function requestActivationFromLockScreen() {
+            const txRef = document.getElementById('lock-tx-ref').value.trim();
+            if (!txRef) {
+                showToast('Veuillez saisir la référence de transaction SMS.', 'error');
+                return;
+            }
+            const vendorWa = (appState.settings.vendorWhatsApp || '22890033627').replace(/[^0-9]/g, '');
+            const msg = `Bonjour, renouvellement abonnement *GestPro FCFA* :\n\n🏪 Boutique : *${appState.settings.shopName}*\n📱 Device ID : *${appState.settings.deviceId}*\n🧾 Réf. SMS : *${txRef}*\n\nMerci de m'envoyer mon code d'activation unique.`;
+            window.open(`https://wa.me/${vendorWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function getSubscriptionStatus() {
+            if (appState.settings.planType === 'LIFE') {
+                return { active: true, isLife: true, daysLeft: 9999, label: 'LICENCE À VIE' };
+            }
+            const now = Date.now();
+            const exp = appState.settings.expiresAt ? new Date(appState.settings.expiresAt).getTime() : 0;
+            const diffMs = exp - now;
+            const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            if (diffMs > 0) {
+                const label = appState.settings.planType === 'TRIAL' ? `ESSAI (${daysLeft}J)` : `PRO (${daysLeft}J)`;
+                return { active: true, isLife: false, daysLeft, label };
+            }
+            return { active: false, isLife: false, daysLeft: 0, label: 'EXPIRÉ' };
+        }
+
+        function updateShopHeaders() {
+            document.getElementById('sidebar-shop-name').textContent = appState.settings.shopName;
+            document.getElementById('mobile-shop-name').textContent = appState.settings.shopName;
+
+            const logoData = appState.settings.shopLogo;
+            const sLogo = document.getElementById('sidebar-shop-logo');
+            const sIcon = document.getElementById('sidebar-shop-icon');
+            const mLogo = document.getElementById('mobile-shop-logo');
+            const mIcon = document.getElementById('mobile-shop-icon');
+
+            if (logoData) {
+                sLogo.src = logoData; sLogo.classList.remove('hidden'); sIcon.classList.add('hidden');
+                mLogo.src = logoData; mLogo.classList.remove('hidden'); mIcon.classList.add('hidden');
+            } else {
+                sLogo.src = ''; sLogo.classList.add('hidden'); sIcon.classList.remove('hidden');
+                mLogo.src = ''; mLogo.classList.add('hidden'); mIcon.classList.remove('hidden');
+            }
+
+            const status = getSubscriptionStatus();
+            const badge = document.getElementById('sidebar-license-badge');
+            const subtext = document.getElementById('sidebar-license-subtext');
+            badge.textContent = status.label;
+            subtext.textContent = !status.active ? 'Renouvellement requis' : status.isLife ? 'Activation permanente' : `${status.daysLeft} jour(s) restant(s)`;
+        }
+
+        function updateSubscriptionUI() {
+            const status = getSubscriptionStatus();
+            const banner = document.getElementById('subscription-banner');
+            const bannerMsg = document.getElementById('banner-message');
+            const pill = document.getElementById('license-status-pill');
+            const daysText = document.getElementById('license-days-left');
+            const expiryDetail = document.getElementById('license-expiry-detail');
+
+            if (status.isLife) {
+                banner.className = 'bg-emerald-950 text-emerald-100 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-emerald-900';
+                bannerMsg.textContent = 'Licence À Vie active — Accès complet illimité.';
+                pill.textContent = 'LICENCE À VIE';
+                daysText.textContent = 'Validité illimitée';
+                expiryDetail.textContent = 'Activation permanente enregistrée sur cet appareil.';
+            } else if (status.active) {
+                banner.className = 'bg-amber-950 text-amber-100 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-amber-900';
+                bannerMsg.textContent = `${appState.settings.planType === 'TRIAL' ? 'Essai gratuit' : 'Abonnement Pro'} : ${status.daysLeft} jour(s) restant(s).`;
+                pill.textContent = appState.settings.planType === 'TRIAL' ? 'ESSAI GRATUIT' : 'ABONNEMENT PRO';
+                daysText.textContent = `${status.daysLeft} jour(s) restant(s)`;
+                expiryDetail.textContent = `Expire le : ${new Date(appState.settings.expiresAt).toLocaleString('fr-FR')}`;
+            } else {
+                banner.className = 'bg-rose-950 text-rose-100 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-rose-900';
+                bannerMsg.textContent = 'Abonnement expiré. Renouvelez via Mixx by Yas ou Flooz.';
+                pill.textContent = 'EXPIRÉ';
+                daysText.textContent = '0 jour restant';
+                expiryDetail.textContent = 'Saisissez un code d\'activation reçu sur WhatsApp.';
+            }
+            updateMomoPaymentDisplay();
+        }
+
+        function checkSubscriptionLock() {
+            const status = getSubscriptionStatus();
+            const lockModal = document.getElementById('lock-screen-modal');
+            if (!status.active) {
+                document.getElementById('lock-device-id').textContent = appState.settings.deviceId;
+                document.getElementById('lock-yas-num').textContent = appState.settings.vendorYasNumber;
+                document.getElementById('lock-flooz-num').textContent = appState.settings.vendorFloozNumber;
+                lockModal.classList.remove('hidden');
+            } else {
+                lockModal.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // TABLEAU DE BORD
+        // ==========================================
+        function renderDashboard() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            let todaySalesTotal = 0, todaySalesCount = 0, totalSalesAmount = 0, totalGrossProfit = 0;
+
+            appState.sales.forEach(s => {
+                totalSalesAmount += s.totalAmount;
+                totalGrossProfit += (s.profit || 0);
+                if (s.date.startsWith(todayStr)) {
+                    todaySalesTotal += s.totalAmount;
+                    todaySalesCount++;
+                }
+            });
+
+            const totalExpenses = appState.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const netProfit = totalGrossProfit - totalExpenses;
+            const activeCredits = appState.credits.filter(c => (c.totalAmount - c.amountPaid) > 0);
+            const totalCreditsDue = activeCredits.reduce((sum, c) => sum + (c.totalAmount - c.amountPaid), 0);
+
+            document.getElementById('kpi-today-sales').textContent = formatFCFA(todaySalesTotal);
+            document.getElementById('kpi-today-count').textContent = `${todaySalesCount} vente(s) aujourd'hui`;
+            document.getElementById('kpi-total-sales').textContent = formatFCFA(totalSalesAmount);
+            document.getElementById('kpi-total-count').textContent = `${appState.sales.length} vente(s) au total`;
+
+            const netEl = document.getElementById('kpi-net-profit');
+            netEl.textContent = formatFCFA(netProfit);
+            netEl.className = `text-2xl font-extrabold mt-1 ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            document.getElementById('kpi-total-credits').textContent = formatFCFA(totalCreditsDue);
+            document.getElementById('kpi-credits-clients').textContent = `${activeCredits.length} client(s) avec solde dû`;
+
+            const lowStockProducts = appState.products.filter(p => p.stock <= p.alertThreshold);
+            const badgeLow = document.getElementById('badge-low-stock');
+            badgeLow.textContent = lowStockProducts.length;
+            badgeLow.classList.toggle('hidden', lowStockProducts.length === 0);
+
+            const badgeCred = document.getElementById('badge-credits');
+            badgeCred.textContent = activeCredits.length;
+            badgeCred.classList.toggle('hidden', activeCredits.length === 0);
+
+            const lowStockContainer = document.getElementById('dashboard-low-stock-list');
+            lowStockContainer.innerHTML = lowStockProducts.length === 0
+                ? `<p class="text-center py-8 text-slate-400 text-sm">Tous vos stocks sont à niveau.</p>`
+                : lowStockProducts.map(p => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200/70">
+                        <div>
+                            <p class="font-bold text-xs text-slate-900">${p.name}</p>
+                            <p class="text-[11px] text-slate-500">Seuil : ${p.alertThreshold}</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${p.stock === 0 ? 'bg-rose-600 text-white' : 'bg-amber-400 text-slate-900'}">
+                            ${p.stock === 0 ? 'Rupture' : p.stock + ' restant(s)'}
+                        </span>
+                    </div>
+                `).join('');
+
+            const recentSalesBody = document.getElementById('dashboard-recent-sales');
+            const recentSales = [...appState.sales].reverse().slice(0, 6);
+            recentSalesBody.innerHTML = recentSales.length === 0
+                ? `<tr><td colspan="5" class="py-6 text-center text-slate-400">Aucune vente enregistrée</td></tr>`
+                : recentSales.map(s => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-2 font-mono text-xs font-bold text-slate-700">${s.id}</td>
+                        <td class="py-3 px-2 font-medium text-slate-800">${s.clientName || 'Client Comptoir'}</td>
+                        <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">${s.paymentMethod}</span></td>
+                        <td class="py-3 px-2 text-right font-bold text-slate-900">${formatFCFA(s.totalAmount)}</td>
+                        <td class="py-3 px-2 text-center">
+                            <button type="button" onclick="viewReceipt('${s.id}')" class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-lg">Reçu</button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // ==========================================
+        // STOCKS & PRODUITS
+        // ==========================================
+        function populateCategoryFilters() {
+            const categories = [...new Set(appState.products.map(p => p.category))].sort();
+            const html = `<option value="ALL">Toutes catégories</option>` + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            const posSel = document.getElementById('pos-category-filter');
+            const invSel = document.getElementById('inv-category-filter');
+            const curPos = posSel.value, curInv = invSel.value;
+            posSel.innerHTML = html;
+            invSel.innerHTML = html;
+            if (categories.includes(curPos)) posSel.value = curPos;
+            if (categories.includes(curInv)) invSel.value = curInv;
+        }
+
+        function renderInventory() {
+            const search = document.getElementById('inv-search').value.toLowerCase();
+            const catFilter = document.getElementById('inv-category-filter').value;
+            const stockFilter = document.getElementById('inv-stock-filter').value;
+
+            let totalCostVal = 0, totalRetailVal = 0;
+            appState.products.forEach(p => {
+                totalCostVal += p.buyPrice * p.stock;
+                totalRetailVal += p.sellPrice * p.stock;
+            });
+
+            document.getElementById('inv-total-items').textContent = `${appState.products.length} référence(s)`;
+            document.getElementById('inv-cost-value').textContent = formatFCFA(totalCostVal);
+            document.getElementById('inv-retail-value').textContent = formatFCFA(totalRetailVal);
+
+            const filtered = appState.products.filter(p => {
+                const matchName = p.name.toLowerCase().includes(search);
+                const matchCat = catFilter === 'ALL' || p.category === catFilter;
+                const matchStock = stockFilter === 'ALL' || (stockFilter === 'LOW' && p.stock <= p.alertThreshold);
+                return matchName && matchCat && matchStock;
+            });
+
+            const tbody = document.getElementById('inventory-table-body');
+            tbody.innerHTML = filtered.length === 0
+                ? `<tr><td colspan="7" class="py-8 text-center text-slate-400">Aucun produit trouvé.</td></tr>`
+                : filtered.map(p => {
+                    const margin = p.sellPrice - p.buyPrice;
+                    const isLow = p.stock <= p.alertThreshold;
+                    return `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3.5 px-4 font-bold text-slate-900">${p.name}</td>
+                            <td class="py-3.5 px-4 text-xs text-slate-600">${p.category}</td>
+                            <td class="py-3.5 px-4 text-right text-slate-600">${formatFCFA(p.buyPrice)}</td>
+                            <td class="py-3.5 px-4 text-right font-bold text-slate-900">${formatFCFA(p.sellPrice)}</td>
+                            <td class="py-3.5 px-4 text-right text-emerald-600 font-semibold">+${formatFCFA(margin)}</td>
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.stock === 0 ? 'bg-rose-100 text-rose-700' : isLow ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}">
+                                    ${p.stock}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-right space-x-1">
+                                <button type="button" onclick="openProductModal('${p.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">Modifier</button>
+                                <button type="button" onclick="deleteProduct('${p.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg">Suppr.</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+        }
+
+        function openProductModal(productId = null) {
+            const title = document.getElementById('product-modal-title');
+            if (productId) {
+                const p = appState.products.find(item => item.id === productId);
+                if (!p) return;
+                title.textContent = 'Modifier le produit';
+                document.getElementById('prod-id').value = p.id;
+                document.getElementById('prod-name').value = p.name;
+                document.getElementById('prod-category').value = p.category;
+                document.getElementById('prod-buy-price').value = p.buyPrice;
+                document.getElementById('prod-sell-price').value = p.sellPrice;
+                document.getElementById('prod-stock').value = p.stock;
+                document.getElementById('prod-alert').value = p.alertThreshold;
+            } else {
+                title.textContent = 'Nouveau produit';
+                document.getElementById('prod-id').value = '';
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-category').value = '';
+                document.getElementById('prod-buy-price').value = '';
+                document.getElementById('prod-sell-price').value = '';
+                document.getElementById('prod-stock').value = '';
+                document.getElementById('prod-alert').value = '5';
+            }
+            openModal('product-modal');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value;
+            const data = {
+                id: id || 'P-' + Date.now(),
+                name: document.getElementById('prod-name').value.trim(),
+                category: document.getElementById('prod-category').value.trim() || 'Divers',
+                buyPrice: parseFloat(document.getElementById('prod-buy-price').value) || 0,
+                sellPrice: parseFloat(document.getElementById('prod-sell-price').value) || 0,
+                stock: parseInt(document.getElementById('prod-stock').value) || 0,
+                alertThreshold: parseInt(document.getElementById('prod-alert').value) || 0
+            };
+
+            if (id) {
+                const idx = appState.products.findIndex(p => p.id === id);
+                if (idx !== -1) appState.products[idx] = data;
+                showToast('Produit mis à jour.');
+            } else {
+                appState.products.push(data);
+                showToast('Produit ajouté au stock.');
+            }
+            saveState();
+            closeModal('product-modal');
+            refreshAllUI();
+        }
+
+        function deleteProduct(id) {
+            appState.products = appState.products.filter(p => p.id !== id);
+            saveState();
+            refreshAllUI();
+            showToast('Produit supprimé.', 'warning');
+        }
+
+        // ==========================================
+        // CAISSE (POINT DE VENTE)
+        // ==========================================
+        function renderPOSProducts() {
+            const search = document.getElementById('pos-search').value.toLowerCase();
+            const cat = document.getElementById('pos-category-filter').value;
+            const filtered = appState.products.filter(p => {
+                return p.name.toLowerCase().includes(search) && (cat === 'ALL' || p.category === cat);
+            });
+
+            const grid = document.getElementById('pos-products-grid');
+            grid.innerHTML = filtered.length === 0
+                ? `<div class="col-span-full py-10 text-center text-slate-400 text-sm">Aucun produit disponible</div>`
+                : filtered.map(p => {
+                    const out = p.stock <= 0;
+                    return `
+                        <button type="button" onclick="addToCart('${p.id}')" ${out ? 'disabled' : ''}
+                            class="text-left p-3.5 rounded-2xl border transition flex flex-col justify-between h-32 ${out ? 'bg-slate-50 border-slate-200 opacity-50' : 'bg-white border-slate-200 hover:border-indigo-500 hover:shadow-md'}">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase text-slate-400 block truncate">${p.category}</span>
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 mt-0.5">${p.name}</h4>
+                            </div>
+                            <div class="flex items-end justify-between mt-2 pt-2 border-t border-slate-100">
+                                <span class="font-extrabold text-xs sm:text-sm text-indigo-600">${formatFCFA(p.sellPrice)}</span>
+                                <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded ${out ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                                    ${out ? 'Épuisé' : 'Stock: ' + p.stock}
+                                </span>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+        }
+
+        function addToCart(productId) {
+            const product = appState.products.find(p => p.id === productId);
+            if (!product || product.stock <= 0) return;
+
+            const existing = cart.find(i => i.productId === productId);
+            if (existing) {
+                if (existing.qty >= product.stock) {
+                    showToast(`Stock max atteint (${product.stock}).`, 'warning');
+                    return;
+                }
+                existing.qty++;
+            } else {
+                cart.push({ productId: product.id, name: product.name, buyPrice: product.buyPrice, sellPrice: product.sellPrice, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateCartQty(productId, delta) {
+            const idx = cart.findIndex(i => i.productId === productId);
+            if (idx === -1) return;
+            const product = appState.products.find(p => p.id === productId);
+            const newQty = cart[idx].qty + delta;
+            if (newQty <= 0) {
+                cart.splice(idx, 1);
+            } else if (product && newQty > product.stock) {
+                showToast(`Stock insuffisant (Max: ${product.stock}).`, 'warning');
+                return;
+            } else {
+                cart[idx].qty = newQty;
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('pos-cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = `<p class="py-6 text-center text-slate-400 text-xs">Votre panier est vide.</p>`;
+                document.getElementById('pos-cart-count').textContent = '0';
+                document.getElementById('pos-cart-total').textContent = '0 FCFA';
+                updateCashChange();
+                return;
+            }
+
+            let totalQty = 0, totalAmount = 0;
+            container.innerHTML = cart.map(item => {
+                const lineTotal = item.sellPrice * item.qty;
+                totalQty += item.qty;
+                totalAmount += lineTotal;
+                return `
+                    <div class="flex items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-xs text-slate-900 truncate">${item.name}</p>
+                            <p class="text-[11px] text-slate-500">${formatFCFA(item.sellPrice)} x ${item.qty}</p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="updateCartQty('${item.productId}', -1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 font-bold text-slate-700">-</button>
+                            <span class="w-6 text-center text-xs font-bold">${item.qty}</span>
+                            <button type="button" onclick="updateCartQty('${item.productId}', 1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 font-bold text-slate-700">+</button>
+                        </div>
+                        <div class="text-right font-bold text-xs text-slate-900 w-20">${formatFCFA(lineTotal)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('pos-cart-count').textContent = totalQty;
+            document.getElementById('pos-cart-total').textContent = formatFCFA(totalAmount);
+            updateCashChange();
+        }
+
+        function updateCashChange() {
+            const totalAmount = cart.reduce((sum, i) => sum + (i.sellPrice * i.qty), 0);
+            const received = parseFloat(document.getElementById('pos-cash-received').value) || 0;
+            const change = Math.max(0, received - totalAmount);
+            document.getElementById('pos-cash-change-amount').textContent = formatFCFA(change);
+        }
+
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.pm-btn').forEach(btn => {
+                btn.className = btn.dataset.pm === method
+                    ? 'pm-btn py-2.5 px-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold'
+                    : 'pm-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold';
+            });
+
+            document.getElementById('pos-cash-change-box').classList.toggle('hidden', method !== 'Espèces');
+            document.getElementById('client-req-badge').classList.toggle('hidden', method !== 'Crédit');
+            document.getElementById('pos-credit-advance-box').classList.toggle('hidden', method !== 'Crédit');
+        }
+
+        function checkoutSale() {
+            if (cart.length === 0) {
+                showToast('Ajoutez au moins un article au panier.', 'error');
+                return;
+            }
+
+            const clientName = document.getElementById('pos-client-name').value.trim();
+            const clientPhone = document.getElementById('pos-client-phone').value.trim();
+            const totalAmount = cart.reduce((sum, i) => sum + (i.sellPrice * i.qty), 0);
+            const totalCost = cart.reduce((sum, i) => sum + (i.buyPrice * i.qty), 0);
+            const profit = totalAmount - totalCost;
+            let amountPaid = totalAmount;
+
+            if (selectedPaymentMethod === 'Crédit') {
+                if (!clientName || !clientPhone) {
+                    showToast('Nom et téléphone WhatsApp obligatoires pour un crédit.', 'error');
+                    return;
+                }
+                const advance = parseFloat(document.getElementById('pos-credit-advance').value) || 0;
+                if (advance >= totalAmount) {
+                    showToast('L\'acompte couvre déjà le total. Choisissez Espèces ou Mobile Money.', 'warning');
+                    return;
+                }
+                amountPaid = advance;
+            }
+
+            cart.forEach(item => {
+                const prod = appState.products.find(p => p.id === item.productId);
+                if (prod) prod.stock = Math.max(0, prod.stock - item.qty);
+            });
+
+            const saleId = 'REC-' + (1000 + appState.sales.length + 1);
+            const nowISO = new Date().toISOString();
+
+            const newSale = {
+                id: saleId,
+                date: nowISO,
+                clientName: clientName || 'Client Comptoir',
+                clientPhone,
+                paymentMethod: selectedPaymentMethod,
+                items: [...cart],
+                totalAmount,
+                amountPaid,
+                profit
+            };
+
+            appState.sales.push(newSale);
+
+            if (selectedPaymentMethod === 'Crédit') {
+                appState.credits.push({
+                    id: 'CRD-' + Date.now(),
+                    saleId,
+                    clientName,
+                    clientPhone,
+                    totalAmount,
+                    amountPaid,
+                    date: nowISO,
+                    history: amountPaid > 0 ? [{ date: nowISO, amount: amountPaid, method: 'Acompte initial' }] : []
+                });
+            }
+
+            saveState();
+            cart = [];
+            document.getElementById('pos-client-name').value = '';
+            document.getElementById('pos-client-phone').value = '';
+            document.getElementById('pos-cash-received').value = '';
+            document.getElementById('pos-credit-advance').value = '0';
+            selectPaymentMethod('Espèces');
+
+            refreshAllUI();
+            showToast('Vente validée !');
+            viewReceipt(saleId);
+        }
+
+        // ==========================================
+        // TICKET DE CAISSE & PARTAGE WHATSAPP
+        // ==========================================
+        function viewReceipt(saleId) {
+            const sale = appState.sales.find(s => s.id === saleId);
+            if (!sale) return;
+            currentReceiptSale = sale;
+
+            const recLogo = document.getElementById('rec-shop-logo');
+            if (appState.settings.shopLogo) {
+                recLogo.src = appState.settings.shopLogo;
+                recLogo.classList.remove('hidden');
+            } else {
+                recLogo.src = '';
+                recLogo.classList.add('hidden');
+            }
+
+            document.getElementById('rec-shop-name').textContent = appState.settings.shopName;
+            document.getElementById('rec-shop-address').textContent = appState.settings.shopAddress;
+            document.getElementById('rec-shop-phone').textContent = 'Tél: ' + appState.settings.shopPhone;
+            document.getElementById('rec-footer').textContent = appState.settings.receiptFooter;
+
+            document.getElementById('rec-id').textContent = `Reçu #${sale.id}`;
+            document.getElementById('rec-date').textContent = formatDateShort(sale.date);
+            document.getElementById('rec-client-info').textContent = `Client: ${sale.clientName}${sale.clientPhone ? ' (' + sale.clientPhone + ')' : ''}`;
+
+            document.getElementById('rec-items').innerHTML = sale.items.map(item => `
+                <div class="flex justify-between">
+                    <span>${item.qty}x ${item.name}</span>
+                    <span class="font-semibold">${formatFCFA(item.sellPrice * item.qty)}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('rec-total').textContent = formatFCFA(sale.totalAmount);
+            document.getElementById('rec-payment').textContent = sale.paymentMethod;
+
+            const creditBox = document.getElementById('rec-credit-details');
+            if (sale.paymentMethod === 'Crédit') {
+                creditBox.classList.remove('hidden');
+                document.getElementById('rec-paid').textContent = formatFCFA(sale.amountPaid);
+                document.getElementById('rec-balance').textContent = formatFCFA(sale.totalAmount - sale.amountPaid);
+            } else {
+                creditBox.classList.add('hidden');
+            }
+
+            openModal('receipt-modal');
+        }
+
+        function shareReceiptOnWhatsApp() {
+            if (!currentReceiptSale) return;
+            const s = currentReceiptSale;
+            const itemsLines = s.items.map(i => `• ${i.qty}x ${i.name} : ${formatFCFA(i.sellPrice * i.qty)}`).join('\n');
+            let msg = `🧾 *REÇU DE CAISSE - ${appState.settings.shopName.toUpperCase()}*\nN° ${s.id} | ${formatDateShort(s.date)}\nClient : ${s.clientName}\n\n${itemsLines}\n\n💰 *TOTAL : ${formatFCFA(s.totalAmount)}*\n💳 Règlement : ${s.paymentMethod}`;
+            if (s.paymentMethod === 'Crédit') {
+                msg += `\n✅ Acompte : ${formatFCFA(s.amountPaid)}\n⏳ Reste dû : ${formatFCFA(s.totalAmount - s.amountPaid)}`;
+            }
+            msg += `\n\n_${appState.settings.receiptFooter}_`;
+
+            let phone = (s.clientPhone || '').replace(/[^0-9]/g, '');
+            if (phone.length === 8) phone = '228' + phone;
+            const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        // ==========================================
+        // CRÉDITS & RELANCES WHATSAPP
+        // ==========================================
+        function renderCredits() {
+            const container = document.getElementById('credits-list-container');
+            if (appState.credits.length === 0) {
+                container.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Aucune vente à crédit enregistrée.</div>`;
+                return;
+            }
+
+            const sorted = [...appState.credits].sort((a, b) => (b.totalAmount - b.amountPaid) - (a.totalAmount - a.amountPaid));
+            container.innerHTML = sorted.map(c => {
+                const remaining = Math.max(0, c.totalAmount - c.amountPaid);
+                const isPaid = remaining === 0;
+                return `
+                    <div class="bg-white p-5 rounded-2xl border ${isPaid ? 'border-emerald-200' : 'border-rose-200'} shadow-sm space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-base text-slate-900">${c.clientName}</h4>
+                                <p class="text-xs text-slate-500">Tél: ${c.clientPhone} • Reçu #${c.saleId}</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                ${isPaid ? 'SOLDÉ' : 'IMPAYÉ'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl text-xs">
+                            <div><span class="text-slate-400 block">Total</span><strong class="text-slate-800">${formatFCFA(c.totalAmount)}</strong></div>
+                            <div><span class="text-slate-400 block">Payé</span><strong class="text-emerald-600">${formatFCFA(c.amountPaid)}</strong></div>
+                            <div><span class="text-slate-400 block">Reste dû</span><strong class="text-rose-600">${formatFCFA(remaining)}</strong></div>
+                        </div>
+                        ${!isPaid ? `
+                            <div class="flex gap-2 pt-1">
+                                <button type="button" onclick="openCreditPayModal('${c.id}')" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl">
+                                    Encaisser Acompte
+                                </button>
+                                <button type="button" onclick="remindCreditWhatsApp('${c.id}')" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl">
+                                    Relancer WhatsApp
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openCreditPayModal(creditId) {
+            const c = appState.credits.find(item => item.id === creditId);
+            if (!c) return;
+            const remaining = c.totalAmount - c.amountPaid;
+            document.getElementById('cp-credit-id').value = c.id;
+            document.getElementById('cp-client-name').textContent = c.clientName;
+            document.getElementById('cp-remaining').textContent = formatFCFA(remaining);
+            document.getElementById('cp-amount').value = remaining;
+            document.getElementById('cp-amount').max = remaining;
+            openModal('credit-pay-modal');
+        }
+
+        function submitCreditPayment(e) {
+            e.preventDefault();
+            const id = document.getElementById('cp-credit-id').value;
+            const amount = parseFloat(document.getElementById('cp-amount').value) || 0;
+            const method = document.getElementById('cp-method').value;
+
+            const c = appState.credits.find(item => item.id === id);
+            if (!c || amount <= 0) return;
+
+            c.amountPaid = Math.min(c.totalAmount, c.amountPaid + amount);
+            c.history.push({ date: new Date().toISOString(), amount, method });
+
+            const sale = appState.sales.find(s => s.id === c.saleId);
+            if (sale) sale.amountPaid = c.amountPaid;
+
+            saveState();
+            closeModal('credit-pay-modal');
+            refreshAllUI();
+            showToast('Remboursement enregistré !');
+        }
+
+        function remindCreditWhatsApp(creditId) {
+            const c = appState.credits.find(item => item.id === creditId);
+            if (!c) return;
+            const remaining = Math.max(0, c.totalAmount - c.amountPaid);
+            let phone = (c.clientPhone || '').replace(/[^0-9]/g, '');
+            if (phone.length === 8) phone = '228' + phone;
+
+            const msg = `Bonjour *${c.clientName}*,\n\nSauf erreur de notre part, il reste un solde de *${formatFCFA(remaining)}* à régler concernant votre achat (Reçu #${c.saleId}) chez *${appState.settings.shopName}*.\n\nVous pouvez régler en espèces ou par Mobile Money (${appState.settings.shopPhone}).\n\nMerci pour votre confiance et à très bientôt !`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // ==========================================
+        // DÉPENSES & COMPTABILITÉ (CSV / JSON)
+        // ==========================================
+        function renderAccounting() {
+            const totalGrossProfit = appState.sales.reduce((sum, s) => sum + (s.profit || 0), 0);
+            const totalExpenses = appState.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const netResult = totalGrossProfit - totalExpenses;
+
+            document.getElementById('acc-gross-profit').textContent = formatFCFA(totalGrossProfit);
+            document.getElementById('acc-total-expenses').textContent = formatFCFA(totalExpenses);
+            const netEl = document.getElementById('acc-net-result');
+            netEl.textContent = formatFCFA(netResult);
+            netEl.className = `text-2xl font-extrabold mt-1 ${netResult >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            const container = document.getElementById('expenses-list-container');
+            const list = [...appState.expenses].reverse();
+            container.innerHTML = list.length === 0
+                ? `<p class="text-center py-6 text-slate-400 text-sm">Aucune dépense enregistrée.</p>`
+                : list.map(e => `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                            <p class="font-bold text-xs text-slate-900">${e.title}</p>
+                            <p class="text-[11px] text-slate-500">${e.category} • ${formatDateShort(e.date)}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-extrabold text-xs text-rose-600">-${formatFCFA(e.amount)}</span>
+                            <button type="button" onclick="deleteExpense('${e.id}')" class="text-xs text-slate-400 hover:text-rose-600 font-bold">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        function addExpense(e) {
+            e.preventDefault();
+            const title = document.getElementById('exp-title').value.trim();
+            const category = document.getElementById('exp-category').value;
+            const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+            if (!title || amount <= 0) return;
+
+            appState.expenses.push({ id: 'EXP-' + Date.now(), date: new Date().toISOString(), title, category, amount });
+            saveState();
+            document.getElementById('exp-title').value = '';
+            document.getElementById('exp-amount').value = '';
+            refreshAllUI();
+            showToast('Dépense enregistrée.');
+        }
+
+        function deleteExpense(id) {
+            appState.expenses = appState.expenses.filter(e => e.id !== id);
+            saveState();
+            refreshAllUI();
+            showToast('Dépense supprimée.', 'warning');
+        }
+
+        function exportAccountingCSV() {
+            let csv = '\uFEFFType;Date;Reference/Libelle;Client/Categorie;Mode;Montant FCFA;Benefice FCFA\n';
+            appState.sales.forEach(s => {
+                csv += `VENTE;${formatDateShort(s.date)};${s.id};${s.clientName};${s.paymentMethod};${s.totalAmount};${s.profit || 0}\n`;
+            });
+            appState.expenses.forEach(e => {
+                csv += `DEPENSE;${formatDateShort(e.date)};${e.title};${e.category};-;-${e.amount};-${e.amount}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Comptabilite_${appState.settings.shopName.replace(/\s+/g, '_')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Export Excel (CSV) téléchargé !');
+        }
+
+        function exportFullBackupJSON() {
+            const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Sauvegarde_GestPro_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Sauvegarde JSON complète téléchargée !');
+        }
+
+        function importFullBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.settings && Array.isArray(parsed.products)) {
+                        appState = parsed;
+                        saveState();
+                        refreshAllUI();
+                        checkSubscriptionLock();
+                        showToast('Sauvegarde restaurée avec succès !');
+                    } else {
+                        showToast('Fichier de sauvegarde invalide.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erreur lors de la lecture du fichier JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ==========================================
+        // LOGO BOUTIQUE & PARAMETRES
+        // ==========================================
+        function loadSettingsForm() {
+            document.getElementById('set-shop-name').value = appState.settings.shopName;
+            document.getElementById('set-shop-phone').value = appState.settings.shopPhone;
+            document.getElementById('set-shop-address').value = appState.settings.shopAddress;
+            document.getElementById('set-receipt-footer').value = appState.settings.receiptFooter;
+            document.getElementById('device-id-display').textContent = appState.settings.deviceId;
+            updateLogoPreviewUI();
+        }
+
+        function updateLogoPreviewUI() {
+            const logoData = appState.settings.shopLogo;
+            const img = document.getElementById('settings-logo-preview');
+            const ph = document.getElementById('settings-logo-placeholder');
+            const btn = document.getElementById('btn-remove-logo');
+            if (!img || !ph || !btn) return;
+
+            if (logoData) {
+                img.src = logoData; img.classList.remove('hidden');
+                ph.classList.add('hidden'); btn.classList.remove('hidden');
+            } else {
+                img.src = ''; img.classList.add('hidden');
+                ph.classList.remove('hidden'); btn.classList.add('hidden');
+            }
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 240;
+                    let w = img.width, h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    appState.settings.shopLogo = file.type === 'image/png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
+                    saveState();
+                    refreshAllUI();
+                    showToast('Logo boutique enregistré !');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function removeShopLogo() {
+            appState.settings.shopLogo = '';
+            saveState();
+            refreshAllUI();
+            showToast('Logo supprimé.', 'warning');
+        }
+
+        function saveShopSettings(e) {
+            e.preventDefault();
+            appState.settings.shopName = document.getElementById('set-shop-name').value.trim();
+            appState.settings.shopPhone = document.getElementById('set-shop-phone').value.trim();
+            appState.settings.shopAddress = document.getElementById('set-shop-address').value.trim();
+            appState.settings.receiptFooter = document.getElementById('set-receipt-footer').value.trim();
+            saveState();
+            refreshAllUI();
+            showToast('Paramètres boutique enregistrés.');
+        }
+
+        // ==========================================
+        // ESPACE REVENDEUR / ADMINISTRATEUR
+        // ==========================================
+        function openAdminModal() {
+            document.getElementById('admin-pin-gate').classList.remove('hidden');
+            document.getElementById('admin-panel-content').classList.add('hidden');
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('adm-generated-box').classList.add('hidden');
+            openModal('admin-modal');
+        }
+
+        function unlockAdminPanel() {
+            const entered = document.getElementById('admin-pin-input').value.trim();
+            if (entered === appState.settings.adminPin) {
+                document.getElementById('admin-pin-gate').classList.add('hidden');
+                document.getElementById('admin-panel-content').classList.remove('hidden');
+                document.getElementById('adm-client-device').value = appState.settings.deviceId;
+                document.getElementById('adm-vendor-wa').value = appState.settings.vendorWhatsApp;
+                document.getElementById('adm-yas-num').value = appState.settings.vendorYasNumber;
+                document.getElementById('adm-flooz-num').value = appState.settings.vendorFloozNumber;
+                document.getElementById('adm-new-pin').value = appState.settings.adminPin;
+                renderAdminHistory();
+            } else {
+                showToast('Code PIN incorrect.', 'error');
+            }
+        }
+
+        function generateAndPrepareClientCode() {
+            const clientDevice = document.getElementById('adm-client-device').value.trim().toUpperCase();
+            const planCode = document.getElementById('adm-plan-code').value;
+            const clientShop = document.getElementById('adm-client-shop').value.trim() || 'Client GestPro';
+            const clientPhone = document.getElementById('adm-client-phone').value.trim();
+
+            if (!clientDevice || !clientDevice.startsWith('GP-')) {
+                showToast('Saisissez un ID Appareil valide (ex: GP-4821-90).', 'error');
+                return;
+            }
+
+            const code = createUniqueActivationCode(clientDevice, planCode);
+            const labels = { '30D': 'Mensuel (30 jours)', '90D': 'Trimestriel (90 jours)', '365D': 'Annuel (365 jours)', 'LIFE': 'Licence À Vie' };
+            lastGeneratedAdminPayload = { code, deviceId: clientDevice, planLabel: labels[planCode], clientShop, clientPhone };
+
+            appState.issuedLicenses.unshift(lastGeneratedAdminPayload);
+            saveState();
+
+            document.getElementById('adm-generated-code').textContent = code;
+            document.getElementById('adm-generated-box').classList.remove('hidden');
+            renderAdminHistory();
+            showToast('Code unique généré !');
+        }
+
+        function sendGeneratedCodeToClientWhatsApp() {
+            if (!lastGeneratedAdminPayload) return;
+            const p = lastGeneratedAdminPayload;
+            let cleanPhone = (p.clientPhone || '').replace(/[^0-9]/g, '');
+            if (cleanPhone.length === 8) cleanPhone = '228' + cleanPhone;
+            if (!cleanPhone) {
+                showToast('Saisissez le numéro WhatsApp du client.', 'error');
+                return;
+            }
+            const msg = `Bonjour *${p.clientShop}*,\n\nVotre paiement Mobile Money est confirmé ! Voici votre *code d'activation unique* pour *GestPro FCFA* :\n\n🔑 Code : *${p.code}*\n📱 Appareil : ${p.deviceId}\n📅 Formule : ${p.planLabel}\n\nOuvrez *GestPro FCFA* > *Licence*, collez ce code et validez.\n\nMerci pour votre confiance !`;
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function saveAdminConfig() {
+            appState.settings.vendorWhatsApp = document.getElementById('adm-vendor-wa').value.trim();
+            appState.settings.vendorYasNumber = document.getElementById('adm-yas-num').value.trim();
+            appState.settings.vendorFloozNumber = document.getElementById('adm-flooz-num').value.trim();
+            const pin = document.getElementById('adm-new-pin').value.trim();
+            if (pin.length >= 4) appState.settings.adminPin = pin;
+            saveState();
+            refreshAllUI();
+            showToast('Configuration Éditeur enregistrée.');
+        }
+
+        function renderAdminHistory() {
+            const container = document.getElementById('adm-history-list');
+            container.innerHTML = (!appState.issuedLicenses || appState.issuedLicenses.length === 0)
+                ? `<p class="text-slate-400 italic">Aucune licence générée.</p>`
+                : appState.issuedLicenses.slice(0, 8).map(item => `
+                    <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <span><strong>${item.clientShop}</strong> (${item.deviceId})</span>
+                        <code class="font-mono font-bold text-indigo-600">${item.code}</code>
+                    </div>
+                `).join('');
+        }
+
+        function copyTextValue(text, msg = 'Copié !') {
+            const inp = document.createElement('input');
+            inp.value = text;
+            document.body.appendChild(inp);
+            inp.select();
+            document.execCommand('copy');
+            document.body.removeChild(inp);
+            showToast(msg);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
